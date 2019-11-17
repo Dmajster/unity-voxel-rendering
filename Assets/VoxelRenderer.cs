@@ -1,4 +1,5 @@
 ﻿using System.Runtime.InteropServices;
+using Unity.Mathematics;
 using UnityEngine;
 
 namespace Assets
@@ -8,7 +9,7 @@ namespace Assets
     {
         public Vector4 Position;
         public Vector2 Size;
-        public Vector3 Color;
+        public Color Color;
     }
 
     public class VoxelRenderer : MonoBehaviour
@@ -16,54 +17,53 @@ namespace Assets
         public Material VoxelMaterial;
 
         public ComputeShader ComputeShader;
-        public ComputeBuffer VoxelBuffer;
-        public ComputeBuffer VoxelArgsBuffer;
+        public ComputeBuffer VoxelDataBuffer;
+        public ComputeBuffer PointsBuffer;
+        public ComputeBuffer PointsArgsBuffer;
+
+        public int[] PointArgs; 
 
         private void Start()
         {
             Camera.onPostRender += Render;
 
-            VoxelBuffer = new ComputeBuffer(2, Marshal.SizeOf<Voxel>());
-            VoxelArgsBuffer = new ComputeBuffer(4, sizeof(int), ComputeBufferType.IndirectArguments);
+            var voxelDataSize = new int3(32, 32, 32);
+            var voxelCount = voxelDataSize.x * voxelDataSize.y * voxelDataSize.z;
 
-            var voxelData = new[]
-            {
-                new Voxel
-                {
-                    Position = new Vector4(0, 0, 0, 1),
-                    Size = new Vector2(1.0f, 0.0f),
-                    Color = new Vector3(255, 0, 0)
-                },
-                new Voxel
-                {
-                    Position = new Vector4(1, 0, 0, 1),
-                    Size = new Vector2(1f, 0.0f),
-                    Color = new Vector3(0, 1.0f, 0)
-                },
-            };
-            VoxelBuffer.SetData(voxelData);
+            VoxelDataBuffer = new ComputeBuffer(voxelCount, sizeof(int)); // 1m^3
 
-            var voxelArgsData = new[]
-            {
+            PointsBuffer = new ComputeBuffer(voxelCount, Marshal.SizeOf<Voxel>(), ComputeBufferType.Append);
+            PointsArgsBuffer = new ComputeBuffer(4, sizeof(int), ComputeBufferType.IndirectArguments);
+
+            ComputeShader.SetBuffer(0, "in_voxel_data", VoxelDataBuffer);
+            ComputeShader.SetBuffer(0, "out_points", PointsBuffer);
+            ComputeShader.Dispatch(0, voxelDataSize.x / 8, voxelDataSize.y / 8, voxelDataSize.z / 8);
+            ComputeBuffer.CopyCount(PointsBuffer, PointsArgsBuffer, sizeof(int));
+
+            PointArgs = new int[4];
+            PointsArgsBuffer.SetData(
+            new []{
                 1,
-                2,
+                32768,
                 0,
-                0,
-            };
-            VoxelArgsBuffer.SetData(voxelArgsData);
+                0
+            });
+
+            VoxelMaterial.SetPass(0);
+            VoxelMaterial.SetBuffer("in_points", PointsBuffer);
         }
 
         private void Render(Camera cam)
         {
             VoxelMaterial.SetPass(0);
-            VoxelMaterial.SetBuffer("_VoxelBuffer", VoxelBuffer);
-            Graphics.DrawProceduralIndirectNow(MeshTopology.Points, VoxelArgsBuffer);
+            Graphics.DrawProceduralIndirectNow(MeshTopology.Points, PointsArgsBuffer);
         }
 
         private void OnDestroyed()
         {
-            VoxelBuffer.Dispose();
-            VoxelArgsBuffer.Dispose();
+            VoxelDataBuffer.Dispose();
+            PointsBuffer.Dispose();
+            PointsArgsBuffer.Dispose();
         }
     }
 }

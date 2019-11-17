@@ -25,17 +25,12 @@ struct g2f
 	float3 color : COLOR;
 };
 
-
-StructuredBuffer<appdata> _VoxelBuffer;
-
-#ifdef UNITY_PROCEDURAL_INSTANCING_ENABLED
-
-#endif
+StructuredBuffer<appdata> in_points;
 
 v2g Vertex(uint id : SV_InstanceID)
 {
 	v2g output;
-	appdata input = _VoxelBuffer[id];
+	appdata input = in_points[id];
 
 	output.position = input.position;
 	output.size = input.size;
