@@ -21,7 +21,7 @@ namespace Assets
         public ComputeBuffer PointsBuffer;
         public ComputeBuffer PointsArgsBuffer;
 
-        public int[] PointArgs; 
+        private int[] _pointArgs = new int[4]; 
 
         private void Start()
         {
@@ -34,20 +34,18 @@ namespace Assets
 
             PointsBuffer = new ComputeBuffer(voxelCount, Marshal.SizeOf<Voxel>(), ComputeBufferType.Append);
             PointsArgsBuffer = new ComputeBuffer(4, sizeof(int), ComputeBufferType.IndirectArguments);
+            PointsArgsBuffer.SetData(new[]{
+                1,
+                0,
+                0,
+                0
+            });
 
             ComputeShader.SetBuffer(0, "in_voxel_data", VoxelDataBuffer);
             ComputeShader.SetBuffer(0, "out_points", PointsBuffer);
             ComputeShader.Dispatch(0, voxelDataSize.x / 8, voxelDataSize.y / 8, voxelDataSize.z / 8);
             ComputeBuffer.CopyCount(PointsBuffer, PointsArgsBuffer, sizeof(int));
-
-            PointArgs = new int[4];
-            PointsArgsBuffer.SetData(
-            new []{
-                1,
-                32768,
-                0,
-                0
-            });
+            //PointsArgsBuffer.GetData(_pointArgs);
 
             VoxelMaterial.SetPass(0);
             VoxelMaterial.SetBuffer("in_points", PointsBuffer);

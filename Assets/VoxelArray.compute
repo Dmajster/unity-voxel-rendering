@@ -19,7 +19,7 @@ AppendStructuredBuffer<appdata> out_points;
 void CSMain (uint3 id : SV_DispatchThreadID)
 {
 	//in_voxel_data[GetIndex(id)]
-	if (true) {
+	if (id.x % 2 == 0) {
 		appdata new_point = {
 			float4(id, 1.0),
 			float2(1.0, 0.0),
