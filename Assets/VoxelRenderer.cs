@@ -27,7 +27,7 @@ namespace Assets
         {
             Camera.onPostRender += Render;
 
-            var voxelDataSize = new int3(32, 32, 32);
+            var voxelDataSize = new int3(128);
             var voxelCount = voxelDataSize.x * voxelDataSize.y * voxelDataSize.z;
 
             VoxelDataBuffer = new ComputeBuffer(voxelCount, sizeof(int)); // 1m^3
