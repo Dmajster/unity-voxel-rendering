@@ -2,7 +2,6 @@
 #include "UnityGBuffer.cginc"
 #include "UnityStandardUtils.cginc"
 
-
 struct appdata
 {
 	float4 position : POSITION;
@@ -26,9 +25,18 @@ struct g2f
 	float3 color : COLOR;
 };
 
-v2g Vertex(appdata input)
+
+StructuredBuffer<appdata> _VoxelBuffer;
+
+#ifdef UNITY_PROCEDURAL_INSTANCING_ENABLED
+
+#endif
+
+v2g Vertex(uint id : SV_InstanceID)
 {
 	v2g output;
+	appdata input = _VoxelBuffer[id];
+
 	output.position = input.position;
 	output.size = input.size;
 	output.color = input.color;
@@ -64,7 +72,6 @@ void Geometry(point v2g input_array[1], inout TriangleStream<g2f>outputStream) {
 	outputStream.Append(corner3);
 	outputStream.Append(corner2);
 	outputStream.RestartStrip();
-
 }
 
 float3 Fragment(g2f input) : SV_Target
