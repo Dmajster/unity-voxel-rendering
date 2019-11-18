@@ -1,35 +1,32 @@
 ﻿#pragma kernel CSMain
 
+#define ARRAY_SIDE_SIZE 8
+#define VOXEL_SIZE 1.0f / 8.0f
 
-struct appdata
+struct voxel
 {
 	float4 position;
 	float2 size;
 	float3 color;
 };
 
+RWStructuredBuffer<voxel> voxel_data;
+
 uint GetIndex(uint3 position) {
-	return position.y * 32 * 32 + position.z * 32 + position.x;
+	return position.y * ARRAY_SIDE_SIZE * ARRAY_SIDE_SIZE + position.z * ARRAY_SIDE_SIZE + position.x;
 }
 
-StructuredBuffer<int> in_voxel_data;
-
-AppendStructuredBuffer<appdata> out_points;
-
-[numthreads(8,8,8)]
+[numthreads(1,1,1)]
 void CSMain (uint3 id : SV_DispatchThreadID)
 {
-	float VOXEL_SIZE = 1.0 / 32.0;
-
-	//in_voxel_data[GetIndex(id)]
 	if (true) {
-		appdata new_point = {
-			float4(id * VOXEL_SIZE, 1.0),
+		voxel new_voxel = {
+			float4(id, 1.0),
 			float2(VOXEL_SIZE, 0.0),
-			float3(1.0, 0.0, 1.0)
+			float3(id / 8.0 )
 		};
 
-		out_points.Append(new_point);
+		voxel_data[GetIndex(id)] = new_voxel;
 	}
 }
 

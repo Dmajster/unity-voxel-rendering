@@ -1,0 +1,88 @@
+﻿#pragma kernel CSMain
+
+#define ARRAY_SIDE_SIZE 8
+#define VOXEL_SIZE 1.0f / 8.0f
+
+#define MAX_STEP_DISTANCE VOXEL_SIZE
+#define MAX_DISTANCE_TRAVELLED 100.0f
+
+float4 screenSize;
+float4x4 vpMatrixInverse;
+
+float4 cameraPosition;
+
+struct voxel
+{
+	float4 position;
+	float2 size;
+	float3 color;
+};
+
+RWStructuredBuffer<float3> colors;
+
+StructuredBuffer<voxel> voxels;
+
+uint GetIndex(uint3 position) {
+	return position.y * ARRAY_SIDE_SIZE * ARRAY_SIDE_SIZE + position.z * ARRAY_SIDE_SIZE + position.x;
+}
+
+uint GetScreenIndex(uint3 position) {
+	return position.y * screenSize.x + position.x;
+}
+
+float3 RayMarch(float3 position, float3 direction) {
+	float distanceTravelled = 0.0f;
+
+	while (distanceTravelled < MAX_DISTANCE_TRAVELLED) {
+		distanceTravelled += MAX_STEP_DISTANCE;
+		position += direction * MAX_STEP_DISTANCE;
+
+		if (position.x < 1 && position.x > 0 && position.y < 1 && position.y > 0 && position.z < 1 && position.z > 0)
+		{
+			uint3 indexPosition = (uint3)(position * 8.0f);
+			uint index = GetIndex(indexPosition);
+
+			return voxels[index].color;
+		}
+	}
+
+	return float3(0, 0, 0);
+}
+
+[numthreads(8, 8, 1)]
+void CSMain(uint3 id : SV_DispatchThreadID)
+{
+	float2 clipspacePosition = id / screenSize * 2 - 1;
+
+	float3 worldDirection = mul(vpMatrixInverse, float4(clipspacePosition, 0, 1));
+
+	colors[GetScreenIndex(id)] = RayMarch(cameraPosition, worldDirection);
+}
+
+/*
+private Color Raytrace(float3 position, float3 direction)
+{
+	var travelLength = 0.0f;
+
+	while (travelLength < 100.0f)
+	{
+		travelLength += 0.125f;
+		position += direction * 0.125f;
+
+		if (position.x < 1 && position.x > 0 && position.y < 1 && position.y > 0 && position.z < 1 && position.z > 0)
+		{
+			var indexPosition = (int3)math.round(position * 8.0f);
+			var index = GetIndex(indexPosition);
+			if (_voxels == null || index > _voxels.Length)
+			{
+				break;
+			}
+
+			var colorVector = _voxels[index].Color;
+			return new Color(colorVector.x, colorVector.y, colorVector.z);
+		}
+	}
+
+	return Color.black;
+}
+*/

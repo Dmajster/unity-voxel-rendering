@@ -6,16 +6,13 @@ struct appdata
 {
 	float4 position : POSITION;
 	float2 size : TEXCOORD0;
-
 	float3 color : COLOR;
-	
 };
 
 struct v2g
 {
 	float4 position : POSITION;
 	float2 size : TEXCOORD0;
-
 	float3 color : COLOR;
 };
 
